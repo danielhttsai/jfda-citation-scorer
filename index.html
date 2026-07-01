@@ -45,7 +45,7 @@
 <body>
 <div class="wrap">
   <h1>JFDA 投稿引用潛力評分系統</h1>
-  <p class="sub">貼上論文的標題、摘要與關鍵字（英文）→ 自動掃描主題 → 給出 1–100 引用潛力分數。模型：10 本同性質期刊 2022–2023、n=4,363、AUC 0.69。分數＝成為高被引（≥10 次引用）文章的預測機率。</p>
+  <p class="sub">貼上論文的標題、摘要與關鍵字（英文）→ 自動掃描主題 → 給出 1–100 引用潛力分數。模型：10 本同性質期刊 2022–2023、n=4,363、AUC 0.69。分數＝在同儕文章中的被引潛力百分位排名（50 分＝與同儕中位數相當，非原始機率）。</p>
 
   <div class="card">
     <label>① 貼上標題 ＋ 摘要 ＋ 關鍵字（英文）</label>
@@ -62,6 +62,7 @@
       <div class="fld"><label>⑤ 開放取用</label><label class="chk"><input type="checkbox" id="oa" checked> 是（JFDA 預設）</label></div>
     </div>
     <button onclick="run()">掃描評分</button>
+    <div class="muted" id="hint" style="display:none;color:#a32d2d;margin-top:8px;">請先貼上論文的標題／摘要／關鍵字（至少一句英文），系統才能掃描主題並評分。</div>
   </div>
 
   <div class="card result" id="result">
@@ -73,11 +74,11 @@
       </div>
     </div>
     <div class="bar"><div id="barfill"></div></div>
-    <div class="scale"><span>0</span><span>40</span><span>70</span><span>100</span></div>
+    <div class="scale"><span>0（同儕最低）</span><span>50（同儕中位數）</span><span>100（同儕最高）</span></div>
     <label style="margin-top:16px;">偵測到的研究主題（＋為加分、−為減分）</label>
     <div class="chips" id="chips"></div>
     <table class="brk" id="brk"></table>
-    <p class="muted">說明：本工具為約稿／選稿輔助參考，非保證值。以文章內容特徵估計引用潛力，未涵蓋作者聲望、時事等因素。門檻與係數可依 JFDA 實際資料再校準。</p>
+    <p class="muted">說明：分數為「同儕百分位排名」，非原始機率——50 分代表與同儕樣本（n=4,363）預測被引潛力的中位數相當，非「一半機率」。本工具為約稿／選稿輔助參考，非保證值，未涵蓋作者聲望、時事等因素，門檻與係數可依 JFDA 實際資料再校準。</p>
   </div>
 </div>
 
@@ -85,8 +86,21 @@
 const COEF={"const":-3.6780244596632206,"Review":0.6589758211229227,"polyphenol_flavonoid":0.15759793792805502,"essential_oil":0.13622726217998554,"antioxidant":-0.1384071413448145,"nanoparticle":0.1397381438220719,"inflammation":0.40731371216108175,"immune":0.07961970123361817,"antimicrobial":0.26584111971193836,"antiviral":-0.018345568416078158,"cancer":0.37204958118950393,"diabetes":-0.20180927853950742,"obesity_lipid":-0.3085511464549879,"hepatoprotective":0.20979210780535934,"neuro":0.33615199402709783,"microbiota":0.6958695330691015,"peptide":0.14065361201643903,"fermentation":0.18849878146581112,"analytical_chroma":-0.4181558284600724,"biosensor_detection":0.25466880681311477,"extraction":0.23695809333697104,"authentication_adulter":0.24801517538874,"mycotoxin":0.7146345602572586,"pesticide_residue":0.012146199799189617,"toxicity_safety":0.11060169060525041,"pharmacokinetics":-0.32256573720761184,"network_pharmacology":0.5395016467227719,"wound_skin":0.017699789949246758,"cardiovascular":0.391022024208896,"OpenAccess":-0.2763445196955256,"log_refs":0.8262960582569066,"log_nauth":0.4578675259386657};
 const THEMES={"polyphenol_flavonoid":"polyphenol|flavonoid|phenolic|anthocyan|catechin|quercetin|resveratrol","essential_oil":"essential oil|volatile oil|aroma|terpen","antioxidant":"antioxidant|oxidative stress|reactive oxygen|ferroptos|nrf2|radical scaveng","nanoparticle":"nanoparticle|\\bnano|nanoemulsion|nanostructure","inflammation":"inflamm|nf-kappa|nlrp3|cytokine|pyroptos","immune":"immune|immuno|macrophage|t cell|antibody","antimicrobial":"antimicrob|antibacterial|antifungal|biofilm|pathogen","antiviral":"antivir|virus|sars|covid|influenza","cancer":"cancer|tumou?r|carcinoma|oncolog|apopto|metasta","diabetes":"diabet|insulin|glucose|glyc|hyperglyc","obesity_lipid":"obesity|lipid|cholesterol|adipo|hyperlip|fatty liver","hepatoprotective":"hepato|liver|hepatic","neuro":"neuro|alzheimer|parkinson|cognit|brain|depress|anxiet","microbiota":"microbiota|microbiome|probiotic|prebiotic|gut","peptide":"peptide|protein hydrolys","fermentation":"ferment|lactic acid bacteria|kombucha|yogurt","analytical_chroma":"chromatograph|hplc|lc-ms|gc-ms|uplc|mass spectrom","biosensor_detection":"biosensor|sensor|detection|electrochem|colorimetric|fluorescent probe","extraction":"extraction|supercritical|ultrasound-assist|solvent","authentication_adulter":"authentic|adulter|geographic origin|traceab|fingerprint","mycotoxin":"mycotoxin|aflatoxin|ochratoxin","pesticide_residue":"pesticide|residue|herbicide","toxicity_safety":"toxicit|safety assessment|risk assessment|genotox|cytotox","pharmacokinetics":"pharmacokinet|bioavailab|absorption","network_pharmacology":"network pharmacolog|molecular docking|systems pharmacolog","wound_skin":"wound|skin|dermat|cosmet|melanin|collagen","cardiovascular":"cardiovascular|hypertension|cardiac|atheroscler|blood pressure"};
 const ZH={polyphenol_flavonoid:"多酚/類黃酮",essential_oil:"精油/萜類",antioxidant:"抗氧化",nanoparticle:"奈米粒子",inflammation:"發炎",immune:"免疫",antimicrobial:"抗菌",antiviral:"抗病毒",cancer:"癌症",diabetes:"糖尿病/血糖",obesity_lipid:"肥胖/血脂",hepatoprotective:"保肝",neuro:"神經/腦",microbiota:"腸道菌",peptide:"胜肽",fermentation:"發酵",analytical_chroma:"層析/質譜",biosensor_detection:"生物感測/檢測",extraction:"萃取技術",authentication_adulter:"真偽鑑別",mycotoxin:"黴菌毒素",pesticide_residue:"農藥殘留",toxicity_safety:"毒性/安全",pharmacokinetics:"藥動/生體可用率",network_pharmacology:"網絡藥理學",wound_skin:"皮膚/傷口",cardiovascular:"心血管"};
+// 同儕樣本（n=4,363）預測機率的百分位分佈（0~100，每一格為該百分位對應的機率值）。用來把原始機率換算成「同儕百分位排名」。
+const PCTL=[0.0572,0.2849,0.319,0.3392,0.3581,0.3718,0.3883,0.3987,0.411,0.4218,0.4302,0.4406,0.4487,0.4571,0.4638,0.4724,0.4799,0.4892,0.4945,0.4995,0.5057,0.5106,0.5143,0.5189,0.5239,0.5301,0.5348,0.5405,0.5457,0.5515,0.5567,0.561,0.5668,0.5711,0.5755,0.5791,0.5827,0.5862,0.5898,0.5941,0.5971,0.5999,0.6038,0.607,0.6112,0.6145,0.6194,0.6232,0.6279,0.6316,0.6351,0.6402,0.644,0.6483,0.6531,0.6576,0.6617,0.6659,0.6703,0.6743,0.678,0.6822,0.6855,0.6903,0.6939,0.697,0.7009,0.7061,0.7107,0.7144,0.7187,0.7241,0.7281,0.7313,0.7353,0.74,0.7454,0.75,0.7552,0.7597,0.7645,0.7696,0.7748,0.7822,0.7893,0.7961,0.8032,0.8084,0.8136,0.8214,0.8297,0.8368,0.8451,0.8562,0.864,0.8747,0.8896,0.8996,0.9189,0.9373,0.9727];
+function probToPercentile(p){
+  if(p<=PCTL[0]) return 0;
+  if(p>=PCTL[100]) return 100;
+  let lo=0,hi=100;
+  while(lo<hi){ const mid=(lo+hi)>>1; if(PCTL[mid]<p) lo=mid+1; else hi=mid; }
+  return lo;
+}
 function run(){
-  const txt=(document.getElementById('txt').value||'').toLowerCase();
+  const txtRaw=(document.getElementById('txt').value||'').trim();
+  const hint=document.getElementById('hint');
+  if(!txtRaw){ hint.style.display='block'; document.getElementById('result').style.display='none'; return; }
+  hint.style.display='none';
+  const txt=txtRaw.toLowerCase();
   const rev=document.querySelector('input[name=type]:checked').value==='review'?1:0;
   const refs=+document.getElementById('refs').value||0;
   const auth=+document.getElementById('auth').value||0;
@@ -94,15 +108,15 @@ function run(){
   let z=COEF['const']+COEF.Review*rev+COEF.OpenAccess*oa+COEF.log_refs*Math.log1p(refs)+COEF.log_nauth*Math.log1p(auth);
   const det=[];
   for(const k in THEMES){ if(new RegExp(THEMES[k]).test(txt)){ z+=COEF[k]; det.push(k); } }
-  const p=1/(1+Math.exp(-z)); const s=Math.round(p*100);
+  const p=1/(1+Math.exp(-z)); const s=probToPercentile(p);
   let band,col;
-  if(s>=70){band='高潛力';col='#3B6D11';}
+  if(s>=80){band='高潛力（前 20%）';col='#3B6D11';}
   else if(s>=40){band='中等潛力';col='#BA7517';}
-  else{band='偏低';col='#a32d2d';}
+  else{band='偏低（後 40%）';col='#a32d2d';}
   document.getElementById('result').style.display='block';
   const sn=document.getElementById('snum'); sn.textContent=s; sn.style.color=col;
   const b=document.getElementById('band'); b.textContent=band; b.style.background=col+'22'; b.style.color=col;
-  document.getElementById('pmsg').textContent='預測成為高被引文章的機率約 '+s+'%';
+  document.getElementById('pmsg').textContent='贏過約 '+s+'% 的同儕文章（原始預測機率 '+(p*100).toFixed(0)+'%）';
   const bf=document.getElementById('barfill'); bf.style.width=s+'%'; bf.style.background=col;
   const chips=document.getElementById('chips');
   if(det.length){ chips.innerHTML=det.map(k=>{const or=Math.exp(COEF[k]);const neg=or<1;return '<span class="chip'+(neg?' neg':'')+'">'+ZH[k]+' '+(neg?'':'+')+((or-1)*100).toFixed(0)+'%</span>';}).join(''); }
