@@ -71,7 +71,7 @@
           <label><input type="radio" name="type" value="review"><span>文獻回顧 Review</span></label>
         </div>
       </div>
-      <div class="fld"><label>③ 參考文獻數</label><input type="number" id="refs" value="45" min="0"></div>
+      <div class="fld"><label>③ 參考文獻數<span style="font-weight:normal;color:var(--grey);"> (超過 250 篇效果封頂)</span></label><input type="number" id="refs" value="45" min="0"></div>
       <div class="fld"><label>④ 作者數</label><input type="number" id="auth" value="5" min="1"></div>
       <div class="fld"><label class="fld-spacer">．</label><button class="scan-btn" onclick="run()">掃描評分</button></div>
     </div>
@@ -91,7 +91,7 @@
     <label style="margin-top:16px;">偵測到的研究主題（＋為加分、−為減分）</label>
     <div class="chips" id="chips"></div>
     <table class="brk" id="brk"></table>
-    <p class="muted">說明：分數為「同儕百分位排名」，非原始機率——50 分代表與同儕樣本（n=4,363）預測被引潛力的中位數相當，非「一半機率」。本工具為約稿／選稿輔助參考，非保證值，未涵蓋作者聲望、時事等因素，門檻與係數可依 JFDA 實際資料再校準。</p>
+    <p class="muted">說明：分數為「同儕百分位排名」，非原始機率——50 分代表與同儕樣本（n=4,363）預測被引潛力的中位數相當，非「一半機率」。參考文獻數已驗證在原著與文獻回顧內部皆為獨立顯著因子（非僅反映文章類型差異），但超過 250 篇（已逼近樣本觀察上限）效果封頂，避免脫離資料支撐範圍。本工具為約稿／選稿輔助參考，非保證值，未涵蓋作者聲望、時事等因素，門檻與係數可依 JFDA 實際資料再校準。</p>
   </div>
 </div>
 
@@ -132,7 +132,9 @@ function run(){
   const refs=+document.getElementById('refs').value||0;
   const auth=+document.getElementById('auth').value||0;
   const oa=1; // JFDA 為 100% 開放取用期刊，固定視為 OA（此因子控制期刊後亦不顯著）
-  let z=COEF['const']+COEF.Review*rev+COEF.OpenAccess*oa+COEF.log_refs*Math.log1p(refs)+COEF.log_nauth*Math.log1p(auth);
+  const REFS_CAP=250; // 超過同儕樣本實際觀察範圍（原著 p99≈176、文獻回顧 p99≈335）後效果封頂，避免脫離資料支撐範圍的極端輸入
+  const refsEff=Math.min(refs,REFS_CAP);
+  let z=COEF['const']+COEF.Review*rev+COEF.OpenAccess*oa+COEF.log_refs*Math.log1p(refsEff)+COEF.log_nauth*Math.log1p(auth);
   const det=[];
   for(const k in THEMES){ if(new RegExp(THEMES[k]).test(txt)){ z+=COEF[k]; det.push(k); } }
   const p=1/(1+Math.exp(-z)); const s=probToPercentile(p);
@@ -148,7 +150,8 @@ function run(){
   const chips=document.getElementById('chips');
   if(det.length){ chips.innerHTML=det.map(k=>{const or=Math.exp(COEF[k]);const neg=or<1;return '<span class="chip'+(neg?' neg':'')+'">'+ZH[k]+' '+(neg?'':'+')+((or-1)*100).toFixed(0)+'%</span>';}).join(''); }
   else chips.innerHTML='<span class="muted">未偵測到明確主題（可補上英文關鍵字）</span>';
-  const rowsHtml=[['文章類型',rev?'文獻回顧':'原著',rev?COEF.Review:0],['參考文獻數',refs+' 篇',COEF.log_refs*Math.log1p(refs)],['作者數',auth+' 人',COEF.log_nauth*Math.log1p(auth)]]
+  const refsLabel=refs+' 篇'+(refs>REFS_CAP?'（已達封頂，以 '+REFS_CAP+' 篇計算）':'');
+  const rowsHtml=[['文章類型',rev?'文獻回顧':'原著',rev?COEF.Review:0],['參考文獻數',refsLabel,COEF.log_refs*Math.log1p(refsEff)],['作者數',auth+' 人',COEF.log_nauth*Math.log1p(auth)]]
     .map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+(r[2]>=0?'+':'')+r[2].toFixed(2)+'</td></tr>').join('');
   document.getElementById('brk').innerHTML='<tr><td colspan="3" style="font-weight:bold;color:#1F3864;border:0;">結構因子貢獻（logit）</td></tr>'+rowsHtml;
 }
