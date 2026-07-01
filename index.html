@@ -26,6 +26,8 @@
   .chk{font-size:14px;color:#333;display:flex;align-items:center;gap:6px;font-weight:normal;}
   button{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 26px;font-size:15px;font-family:inherit;cursor:pointer;margin-top:16px;}
   button:hover{background:#2a4a80;}
+  .scan-btn{height:38px;margin-top:0;padding:0 24px;font-size:14px;white-space:nowrap;}
+  .fld-spacer{visibility:hidden;}
   .ex-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;}
   .ex-btn{background:#fff;color:var(--navy);border:1px solid #cfd6e4;border-radius:20px;padding:6px 14px;font-size:12.5px;font-family:inherit;cursor:pointer;margin:0;}
   .ex-btn:hover{background:#EAF0FA;border-color:var(--blue);}
@@ -71,9 +73,9 @@
       </div>
       <div class="fld"><label>③ 參考文獻數</label><input type="number" id="refs" value="45" min="0"></div>
       <div class="fld"><label>④ 作者數</label><input type="number" id="auth" value="5" min="1"></div>
+      <div class="fld"><label class="fld-spacer">．</label><button class="scan-btn" onclick="run()">掃描評分</button></div>
     </div>
-    <button onclick="run()">掃描評分</button>
-    <div class="muted" id="hint" style="display:none;color:#a32d2d;margin-top:8px;">請先貼上論文的標題／摘要／關鍵字（至少一句英文），系統才能掃描主題並評分。</div>
+    <div class="muted" id="hint" style="display:none;color:#a32d2d;margin-top:10px;">請先貼上論文的標題／摘要／關鍵字（至少一句英文），系統才能掃描主題並評分。</div>
   </div>
 
   <div class="card result" id="result">
