@@ -26,6 +26,12 @@
   .chk{font-size:14px;color:#333;display:flex;align-items:center;gap:6px;font-weight:normal;}
   button{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 26px;font-size:15px;font-family:inherit;cursor:pointer;margin-top:16px;}
   button:hover{background:#2a4a80;}
+  .ex-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;}
+  .ex-btn{background:#fff;color:var(--navy);border:1px solid #cfd6e4;border-radius:20px;padding:6px 14px;font-size:12.5px;font-family:inherit;cursor:pointer;margin:0;}
+  .ex-btn:hover{background:#EAF0FA;border-color:var(--blue);}
+  .ex-btn.hi{color:#3B6D11;border-color:#c7ddb3;}
+  .ex-btn.md{color:#BA7517;border-color:#f0dcae;}
+  .ex-btn.lo{color:#a32d2d;border-color:#f0cccc;}
   .result{display:none;margin-top:4px;}
   .score-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
   .score-num{font-size:60px;font-weight:bold;line-height:1;}
@@ -46,6 +52,12 @@
 <div class="wrap">
   <h1>JFDA 投稿引用潛力評分系統</h1>
   <p class="sub">貼上論文的標題、摘要與關鍵字（英文）→ 自動掃描主題 → 給出 1–100 引用潛力分數。模型：10 本同性質期刊 2022–2023、n=4,363、AUC 0.69。分數＝在同儕文章中的被引潛力百分位排名（50 分＝與同儕中位數相當，非原始機率）。</p>
+
+  <div class="ex-row">
+    <button class="ex-btn hi" onclick="fillExample(0)">▸ 試試高潛力範例</button>
+    <button class="ex-btn md" onclick="fillExample(1)">▸ 試試中等潛力範例</button>
+    <button class="ex-btn lo" onclick="fillExample(2)">▸ 試試偏低潛力範例</button>
+  </div>
 
   <div class="card">
     <label>① 貼上標題 ＋ 摘要 ＋ 關鍵字（英文）</label>
@@ -86,6 +98,21 @@
 const COEF={"const":-3.6780244596632206,"Review":0.6589758211229227,"polyphenol_flavonoid":0.15759793792805502,"essential_oil":0.13622726217998554,"antioxidant":-0.1384071413448145,"nanoparticle":0.1397381438220719,"inflammation":0.40731371216108175,"immune":0.07961970123361817,"antimicrobial":0.26584111971193836,"antiviral":-0.018345568416078158,"cancer":0.37204958118950393,"diabetes":-0.20180927853950742,"obesity_lipid":-0.3085511464549879,"hepatoprotective":0.20979210780535934,"neuro":0.33615199402709783,"microbiota":0.6958695330691015,"peptide":0.14065361201643903,"fermentation":0.18849878146581112,"analytical_chroma":-0.4181558284600724,"biosensor_detection":0.25466880681311477,"extraction":0.23695809333697104,"authentication_adulter":0.24801517538874,"mycotoxin":0.7146345602572586,"pesticide_residue":0.012146199799189617,"toxicity_safety":0.11060169060525041,"pharmacokinetics":-0.32256573720761184,"network_pharmacology":0.5395016467227719,"wound_skin":0.017699789949246758,"cardiovascular":0.391022024208896,"OpenAccess":-0.2763445196955256,"log_refs":0.8262960582569066,"log_nauth":0.4578675259386657};
 const THEMES={"polyphenol_flavonoid":"polyphenol|flavonoid|phenolic|anthocyan|catechin|quercetin|resveratrol","essential_oil":"essential oil|volatile oil|aroma|terpen","antioxidant":"antioxidant|oxidative stress|reactive oxygen|ferroptos|nrf2|radical scaveng","nanoparticle":"nanoparticle|\\bnano|nanoemulsion|nanostructure","inflammation":"inflamm|nf-kappa|nlrp3|cytokine|pyroptos","immune":"immune|immuno|macrophage|t cell|antibody","antimicrobial":"antimicrob|antibacterial|antifungal|biofilm|pathogen","antiviral":"antivir|virus|sars|covid|influenza","cancer":"cancer|tumou?r|carcinoma|oncolog|apopto|metasta","diabetes":"diabet|insulin|glucose|glyc|hyperglyc","obesity_lipid":"obesity|lipid|cholesterol|adipo|hyperlip|fatty liver","hepatoprotective":"hepato|liver|hepatic","neuro":"neuro|alzheimer|parkinson|cognit|brain|depress|anxiet","microbiota":"microbiota|microbiome|probiotic|prebiotic|gut","peptide":"peptide|protein hydrolys","fermentation":"ferment|lactic acid bacteria|kombucha|yogurt","analytical_chroma":"chromatograph|hplc|lc-ms|gc-ms|uplc|mass spectrom","biosensor_detection":"biosensor|sensor|detection|electrochem|colorimetric|fluorescent probe","extraction":"extraction|supercritical|ultrasound-assist|solvent","authentication_adulter":"authentic|adulter|geographic origin|traceab|fingerprint","mycotoxin":"mycotoxin|aflatoxin|ochratoxin","pesticide_residue":"pesticide|residue|herbicide","toxicity_safety":"toxicit|safety assessment|risk assessment|genotox|cytotox","pharmacokinetics":"pharmacokinet|bioavailab|absorption","network_pharmacology":"network pharmacolog|molecular docking|systems pharmacolog","wound_skin":"wound|skin|dermat|cosmet|melanin|collagen","cardiovascular":"cardiovascular|hypertension|cardiac|atheroscler|blood pressure"};
 const ZH={polyphenol_flavonoid:"多酚/類黃酮",essential_oil:"精油/萜類",antioxidant:"抗氧化",nanoparticle:"奈米粒子",inflammation:"發炎",immune:"免疫",antimicrobial:"抗菌",antiviral:"抗病毒",cancer:"癌症",diabetes:"糖尿病/血糖",obesity_lipid:"肥胖/血脂",hepatoprotective:"保肝",neuro:"神經/腦",microbiota:"腸道菌",peptide:"胜肽",fermentation:"發酵",analytical_chroma:"層析/質譜",biosensor_detection:"生物感測/檢測",extraction:"萃取技術",authentication_adulter:"真偽鑑別",mycotoxin:"黴菌毒素",pesticide_residue:"農藥殘留",toxicity_safety:"毒性/安全",pharmacokinetics:"藥動/生體可用率",network_pharmacology:"網絡藥理學",wound_skin:"皮膚/傷口",cardiovascular:"心血管"};
+const EXAMPLES=[
+  {text:"Systematic review of gut microbiota-mediated anti-inflammatory mechanisms of dietary polyphenols",type:"review",refs:25,auth:3,oa:true},
+  {text:"Gut microbiota response to a polyphenol-rich diet: a pilot study",type:"article",refs:35,auth:4,oa:true},
+  {text:"Development and validation of an HPLC-UV method for quantification of preservatives in packaged food products",type:"article",refs:20,auth:3,oa:true}
+];
+function fillExample(i){
+  const e=EXAMPLES[i];
+  document.getElementById('txt').value=e.text;
+  document.querySelector('input[name=type][value="'+e.type+'"]').checked=true;
+  document.getElementById('refs').value=e.refs;
+  document.getElementById('auth').value=e.auth;
+  document.getElementById('oa').checked=e.oa;
+  run();
+  document.getElementById('result').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 // 同儕樣本（n=4,363）預測機率的百分位分佈（0~100，每一格為該百分位對應的機率值）。用來把原始機率換算成「同儕百分位排名」。
 const PCTL=[0.0572,0.2849,0.319,0.3392,0.3581,0.3718,0.3883,0.3987,0.411,0.4218,0.4302,0.4406,0.4487,0.4571,0.4638,0.4724,0.4799,0.4892,0.4945,0.4995,0.5057,0.5106,0.5143,0.5189,0.5239,0.5301,0.5348,0.5405,0.5457,0.5515,0.5567,0.561,0.5668,0.5711,0.5755,0.5791,0.5827,0.5862,0.5898,0.5941,0.5971,0.5999,0.6038,0.607,0.6112,0.6145,0.6194,0.6232,0.6279,0.6316,0.6351,0.6402,0.644,0.6483,0.6531,0.6576,0.6617,0.6659,0.6703,0.6743,0.678,0.6822,0.6855,0.6903,0.6939,0.697,0.7009,0.7061,0.7107,0.7144,0.7187,0.7241,0.7281,0.7313,0.7353,0.74,0.7454,0.75,0.7552,0.7597,0.7645,0.7696,0.7748,0.7822,0.7893,0.7961,0.8032,0.8084,0.8136,0.8214,0.8297,0.8368,0.8451,0.8562,0.864,0.8747,0.8896,0.8996,0.9189,0.9373,0.9727];
 function probToPercentile(p){
